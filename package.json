@@ -1,0 +1,37 @@
+{
+  "name": "krypt-agent-crypto",
+  "version": "1.0.0",
+  "description": "Krypt Agent Crypto is a systematic paper-trading and research engine for crypto market-neutral and hybrid strategies.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toyetoye/krypt-agent-crypto.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/toyetoye/krypt-agent-crypto/issues"
+  },
+  "homepage": "https://github.com/toyetoye/krypt-agent-crypto#readme",
+  "dependencies": {
+    "ccxt": "^4.5.52",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0"
+  }
+}
