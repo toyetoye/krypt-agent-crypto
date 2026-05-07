@@ -1,17 +1,12 @@
 import { getSpotTicker, getFuturesTicker, getPremiumIndex } from "./exchanges/binanceClient";
+import { PaperAccount, PositionSide } from "./portfolio/paperAccount";
 
 type FundingRow = {
   symbol: string;
-  spotLast: number;
-  futuresLast: number;
-  markPrice: number;
-  indexPrice: number;
   fundingRate: number;
-  fundingPct: number;
   annualizedFundingPct: number;
   basisPct: number;
   signal: string;
-  nextFundingTime: string;
 };
 
 function toNum(value: string | number | undefined): number {
@@ -19,9 +14,9 @@ function toNum(value: string | number | undefined): number {
 }
 
 function buildSignal(fundingRate: number): string {
-  if (fundingRate > 0.00005) return "Short perp + long spot may collect funding";
-  if (fundingRate < -0.00005) return "Long perp + short spot may collect funding";
-  return "No strong funding edge";
+  if (fundingRate > 0.00005) return "SHORT_PERP_LONG_SPOT";
+  if (fundingRate < -0.00005) return "LONG_PERP_SHORT_SPOT";
+  return "NONE";
 }
 
 async function scanSymbol(symbol: string): Promise<FundingRow> {
@@ -31,53 +26,63 @@ async function scanSymbol(symbol: string): Promise<FundingRow> {
 
   const spotLast = toNum(spot.lastPrice);
   const futuresLast = toNum(futures.lastPrice);
-  const markPrice = toNum(premium.markPrice);
-  const indexPrice = toNum(premium.indexPrice);
   const fundingRate = toNum(premium.lastFundingRate);
 
   return {
     symbol,
-    spotLast,
-    futuresLast,
-    markPrice,
-    indexPrice,
     fundingRate,
-    fundingPct: fundingRate * 100,
     annualizedFundingPct: fundingRate * 3 * 365 * 100,
     basisPct: ((futuresLast - spotLast) / spotLast) * 100,
     signal: buildSignal(fundingRate),
-    nextFundingTime: new Date(Number(premium.nextFundingTime)).toISOString(),
   };
 }
 
 async function main() {
-  console.log("Krypt Agent Crypto funding scanner starting...");
+  console.log("Krypt Agent Crypto P&L engine starting...\n");
 
-  const symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT"];
-  const rows: FundingRow[] = [];
+  const account = new PaperAccount(10000);
+  const symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"];
 
   for (const symbol of symbols) {
     try {
-      rows.push(await scanSymbol(symbol));
+      const row = await scanSymbol(symbol);
+
+      console.table(row);
+
+      // Open qualifying paper trade
+      if (
+        Math.abs(row.annualizedFundingPct) >= 8 &&
+        row.signal !== "NONE" &&
+        account.positions.length < 3 &&
+        account.canOpen(2000)
+      ) {
+        account.open({
+          symbol: row.symbol,
+          side: row.signal as PositionSide,
+          notionalUsd: 2000,
+          entryFundingRate: row.fundingRate,
+          entryBasisPct: row.basisPct,
+          openedAt: new Date().toISOString(),
+        });
+      }
+
+      // Mark existing position
+      const mark = account.mark(
+        row.symbol,
+        row.fundingRate,
+        row.basisPct
+      );
+
+      if (mark) {
+        console.log("\nPOSITION MARK");
+        console.table(mark);
+      }
     } catch (err) {
-      console.error(`Failed to scan ${symbol}:`, err);
+      console.error(`Failed ${symbol}:`, err);
     }
   }
 
-  rows.sort((a, b) => Math.abs(b.annualizedFundingPct) - Math.abs(a.annualizedFundingPct));
-
-  console.table(
-    rows.map((row) => ({
-      symbol: row.symbol,
-      spot: row.spotLast.toFixed(4),
-      futures: row.futuresLast.toFixed(4),
-      fundingPct: row.fundingPct.toFixed(5),
-      annualizedPct: row.annualizedFundingPct.toFixed(2),
-      basisPct: row.basisPct.toFixed(4),
-      signal: row.signal,
-      nextFunding: row.nextFundingTime,
-    }))
-  );
+  account.summary();
 }
 
-main().catch((err) => console.error("Fatal:", err));
+main().catch(console.error);
