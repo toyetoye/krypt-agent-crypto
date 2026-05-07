@@ -1,6 +1,13 @@
 import { getSpotTicker, getFuturesTicker, getPremiumIndex } from "./exchanges/binanceClient";
 import { PaperAccount, PositionSide } from "./portfolio/paperAccount";
 
+const ENTRY_THRESHOLD_ANNUALIZED = 7;
+const EXIT_FUNDING_COLLAPSE_ANNUALIZED = 4;
+const TAKE_PROFIT_USD = 20;
+const STOP_LOSS_USD = -30;
+const MAX_HOLD_HOURS = 72;
+const POSITION_SIZE_USD = 2000;
+
 type FundingRow = {
   symbol: string;
   fundingRate: number;
@@ -37,8 +44,18 @@ async function scanSymbol(symbol: string): Promise<FundingRow> {
   };
 }
 
+function exitReason(row: FundingRow, mark: any): string | null {
+  if (mark.netPnlUsd >= TAKE_PROFIT_USD) return "TAKE_PROFIT";
+  if (mark.netPnlUsd <= STOP_LOSS_USD) return "STOP_LOSS";
+  if (mark.hoursOpen >= MAX_HOLD_HOURS) return "MAX_HOLD_TIME";
+  if (Math.abs(row.annualizedFundingPct) < EXIT_FUNDING_COLLAPSE_ANNUALIZED) {
+    return "FUNDING_COLLAPSE";
+  }
+  return null;
+}
+
 async function main() {
-  console.log("Krypt Agent Crypto P&L engine starting...\n");
+  console.log("Krypt Agent Crypto exit engine starting...\n");
 
   const account = new PaperAccount(10000);
   const symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"];
@@ -46,36 +63,35 @@ async function main() {
   for (const symbol of symbols) {
     try {
       const row = await scanSymbol(symbol);
-
       console.table(row);
 
-      // Open qualifying paper trade
-      if (
-        Math.abs(row.annualizedFundingPct) >= 8 &&
-        row.signal !== "NONE" &&
-        account.positions.length < 3 &&
-        account.canOpen(2000)
-      ) {
-        account.open({
-          symbol: row.symbol,
-          side: row.signal as PositionSide,
-          notionalUsd: 2000,
-          entryFundingRate: row.fundingRate,
-          entryBasisPct: row.basisPct,
-          openedAt: new Date().toISOString(),
-        });
-      }
-
-      // Mark existing position
-      const mark = account.mark(
-        row.symbol,
-        row.fundingRate,
-        row.basisPct
-      );
+      const mark = account.mark(row.symbol, row.fundingRate, row.basisPct);
 
       if (mark) {
         console.log("\nPOSITION MARK");
         console.table(mark);
+
+        const reason = exitReason(row, mark);
+        if (reason) {
+          account.close(row.symbol, mark.netPnlUsd, reason);
+          continue;
+        }
+      }
+
+      if (
+        Math.abs(row.annualizedFundingPct) >= ENTRY_THRESHOLD_ANNUALIZED &&
+        row.signal !== "NONE" &&
+        account.positions.length < 3 &&
+        account.canOpen(POSITION_SIZE_USD)
+      ) {
+        account.open({
+          symbol: row.symbol,
+          side: row.signal as PositionSide,
+          notionalUsd: POSITION_SIZE_USD,
+          entryFundingRate: row.fundingRate,
+          entryBasisPct: row.basisPct,
+          openedAt: new Date().toISOString(),
+        });
       }
     } catch (err) {
       console.error(`Failed ${symbol}:`, err);
