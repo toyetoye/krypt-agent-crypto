@@ -1,20 +1,15 @@
 {
   "name": "krypt-agent-crypto",
   "version": "1.0.0",
-  "description": "Systematic crypto paper-trading and research engine for funding, basis, mean-reversion, and momentum strategies.",
+  "description": "Systematic crypto paper-trading and research engine.",
   "main": "index.js",
-"scripts": {
-  "dev": "tsx src/index.ts",
-  "dashboard": "tsx src/dashboard/server.ts",
-  "start": "tsx src/railway.ts"
-}
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "dashboard": "tsx src/dashboard/server.ts",
+    "start": "tsx src/railway.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "ccxt": "^4.5.17",
-    "chart.js": "^4.5.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
