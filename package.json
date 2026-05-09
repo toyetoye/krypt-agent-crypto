@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "dashboard": "tsx src/dashboard/server.ts",
-    "start": "tsx src/railway.ts"
+    "start": "node ./node_modules/tsx/dist/cli.mjs src/railway.ts"
   },
   "dependencies": {
     "ccxt": "^4.5.17",
