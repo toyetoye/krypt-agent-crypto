@@ -1,0 +1,62 @@
+{
+  "updatedAt": "2026-05-09T08:22:35.925Z",
+  "rows": [
+    {
+      "symbol": "BTCUSDT",
+      "spotLast": 80389.38,
+      "futuresLast": 80346,
+      "fundingRate": -0.000033,
+      "annualizedFundingPct": -3.6135,
+      "basisPct": -0.05396235174348235,
+      "signal": "LONG_PERP_SHORT_SPOT",
+      "state": "IN_POSITION",
+      "stateReason": "Position open; marking live P&L",
+      "mark": {
+        "id": "BTCUSDT-1778313174052",
+        "symbol": "BTCUSDT",
+        "estimatedFundingPnlUsd": 0.004691244422222222,
+        "basisPnlUsd": -0.059317268165716974,
+        "netPnlUsd": -0.054626023743494755,
+        "hoursOpen": 0.49433555555555553
+      }
+    },
+    {
+      "symbol": "ETHUSDT",
+      "spotLast": 2318.05,
+      "futuresLast": 2316.8,
+      "fundingRate": 0.00004628,
+      "annualizedFundingPct": 5.067659999999999,
+      "basisPct": -0.05392463493022152,
+      "signal": "SHORT_PERP_LONG_SPOT",
+      "state": "IN_POSITION",
+      "stateReason": "Position open; marking live P&L",
+      "mark": {
+        "id": "ETHUSDT-1778275982789",
+        "symbol": "ETHUSDT",
+        "estimatedFundingPnlUsd": 0.135915024375,
+        "basisPnlUsd": -0.2819627984303429,
+        "netPnlUsd": -0.1460477740553429,
+        "hoursOpen": 10.825569444444445
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "spotLast": 93.79,
+      "futuresLast": 93.74,
+      "fundingRate": 0.00004414,
+      "annualizedFundingPct": 4.83333,
+      "basisPct": -0.053310587482686175,
+      "signal": "SHORT_PERP_LONG_SPOT",
+      "state": "IN_POSITION",
+      "stateReason": "Position open; marking live P&L",
+      "mark": {
+        "id": "SOLUSDT-1778265185723",
+        "symbol": "SOLUSDT",
+        "estimatedFundingPnlUsd": 0.18017504376805552,
+        "basisPnlUsd": -1.0662117496537236,
+        "netPnlUsd": -0.8860367058856681,
+        "hoursOpen": 13.82505611111111
+      }
+    }
+  ]
+}

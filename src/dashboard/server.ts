@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 const app = express();
-const PORT = 4000;
+const PORT = Number(process.env.PORT || 4000);
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const POSITIONS_FILE = path.join(DATA_DIR, "positions.json");

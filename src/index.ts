@@ -5,12 +5,15 @@ import { writeSnapshot, appendTrade, appendMark } from "./data/logger";
 const WATCH_INTERVAL_MS = 30_000;
 const DECISION_EVERY_TICKS = 10;
 
-const ENTRY_THRESHOLD_ANNUALIZED = 5;
+const ENTRY_THRESHOLD_ANNUALIZED = 4;
 const EXIT_FUNDING_COLLAPSE_ANNUALIZED = 3;
+const MAX_ENTRY_BASIS_ABS_PCT = 0.05;
 const TAKE_PROFIT_USD = 20;
 const STOP_LOSS_USD = -(TAKE_PROFIT_USD / 2);
+const BASIS_STOP_LOSS_USD = -(TAKE_PROFIT_USD / 4);
 const MAX_HOLD_HOURS = 72;
 const POSITION_SIZE_USD = 2000;
+
 
 type BotState =
   | "WAITING_FOR_SETUP"
@@ -43,9 +46,9 @@ function toNum(value: string | number | undefined): number {
   return Number(value ?? 0);
 }
 
-function buildSignal(fundingRate: number): string {
-  if (fundingRate > 0.00005) return "SHORT_PERP_LONG_SPOT";
-  if (fundingRate < -0.00005) return "LONG_PERP_SHORT_SPOT";
+function buildSignal(annualizedFundingPct: number): string {
+  if (annualizedFundingPct > 0) return "SHORT_PERP_LONG_SPOT";
+  if (annualizedFundingPct < 0) return "LONG_PERP_SHORT_SPOT";
   return "NONE";
 }
 
@@ -59,7 +62,7 @@ async function scanSymbol(symbol: string): Promise<FundingRow> {
   const fundingRate = toNum(premium.lastFundingRate);
   const annualizedFundingPct = fundingRate * 3 * 365 * 100;
   const basisPct = ((futuresLast - spotLast) / spotLast) * 100;
-  const signal = buildSignal(fundingRate);
+  const signal = buildSignal(annualizedFundingPct);
 
   return {
     symbol,
@@ -83,6 +86,7 @@ function exitReason(row: FundingRow, mark: FundingRow["mark"]): string | null {
   if (!mark) return null;
 
   if (mark.netPnlUsd >= TAKE_PROFIT_USD) return "TAKE_PROFIT";
+  if (mark.basisPnlUsd <= BASIS_STOP_LOSS_USD) return "BASIS_STOP_LOSS";
   if (mark.netPnlUsd <= STOP_LOSS_USD) return "STOP_LOSS_HALF_TP";
   if (mark.hoursOpen >= MAX_HOLD_HOURS) return "MAX_HOLD_TIME";
 
@@ -156,13 +160,14 @@ async function tick(tickNo: number) {
         }
       }
 
-      if (
-        isDecisionTick &&
-        Math.abs(row.annualizedFundingPct) >= ENTRY_THRESHOLD_ANNUALIZED &&
-        row.signal !== "NONE" &&
-        account.positions.length < 3 &&
-        account.canOpen(POSITION_SIZE_USD)
-      ) {
+if (
+  isDecisionTick &&
+  Math.abs(row.annualizedFundingPct) >= ENTRY_THRESHOLD_ANNUALIZED &&
+  Math.abs(row.basisPct) <= MAX_ENTRY_BASIS_ABS_PCT &&
+  row.signal !== "NONE" &&
+  account.positions.length < 3 &&
+  account.canOpen(POSITION_SIZE_USD)
+) {
         row.state = "OPENING_POSITION";
         row.stateReason = "Entry threshold met";
 

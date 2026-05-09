@@ -1,0 +1,5 @@
+{"time":"2026-05-08T09:38:50.114Z","type":"OPEN","id":"SOLUSDT-1778233130112","symbol":"SOLUSDT","side":"SHORT_PERP_LONG_SPOT","notionalUsd":2000,"entryFundingRate":0.0001,"entryBasisPct":-0.06774302811334319}
+{"time":"2026-05-08T13:10:01.837Z","type":"CLOSE","id":"SOLUSDT-1778233130112","symbol":"SOLUSDT","side":"SHORT_PERP_LONG_SPOT","pnlUsd":0.08539257530728522,"fundingPnlUsd":0.0879980763888889,"basisPnlUsd":-0.0026055010816036783,"reason":"FUNDING_COLLAPSE"}
+{"time":"2026-05-08T18:33:05.724Z","type":"OPEN","id":"SOLUSDT-1778265185723","symbol":"SOLUSDT","side":"SHORT_PERP_LONG_SPOT","notionalUsd":2000,"entryFundingRate":0.00005213,"entryBasisPct":0}
+{"time":"2026-05-08T21:33:02.791Z","type":"OPEN","id":"ETHUSDT-1778275982789","symbol":"ETHUSDT","side":"SHORT_PERP_LONG_SPOT","notionalUsd":2000,"entryFundingRate":0.00005022,"entryBasisPct":-0.039826495008704374}
+{"time":"2026-05-09T07:52:54.054Z","type":"OPEN","id":"BTCUSDT-1778313174052","symbol":"BTCUSDT","side":"LONG_PERP_SHORT_SPOT","notionalUsd":2000,"entryFundingRate":-0.00003796,"entryBasisPct":-0.0509964883351965}
