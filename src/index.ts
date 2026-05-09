@@ -5,15 +5,17 @@ import { writeSnapshot, appendTrade, appendMark } from "./data/logger";
 const WATCH_INTERVAL_MS = 30_000;
 const DECISION_EVERY_TICKS = 10;
 
+const POSITION_SIZE_USD = 2000;
+
 const ENTRY_THRESHOLD_ANNUALIZED = 4;
 const EXIT_FUNDING_COLLAPSE_ANNUALIZED = 3;
-const MAX_ENTRY_BASIS_ABS_PCT = 0.05;
+
 const TAKE_PROFIT_USD = 20;
 const STOP_LOSS_USD = -(TAKE_PROFIT_USD / 2);
 const BASIS_STOP_LOSS_USD = -(TAKE_PROFIT_USD / 4);
-const MAX_HOLD_HOURS = 72;
-const POSITION_SIZE_USD = 2000;
 
+const MAX_ENTRY_BASIS_ABS_PCT = 0.05;
+const MAX_HOLD_HOURS = 8;
 
 type BotState =
   | "WAITING_FOR_SETUP"
@@ -42,6 +44,8 @@ type FundingRow = {
   };
 };
 
+const account = new PaperAccount(10000);
+
 function toNum(value: string | number | undefined): number {
   return Number(value ?? 0);
 }
@@ -50,6 +54,22 @@ function buildSignal(annualizedFundingPct: number): string {
   if (annualizedFundingPct > 0) return "SHORT_PERP_LONG_SPOT";
   if (annualizedFundingPct < 0) return "LONG_PERP_SHORT_SPOT";
   return "NONE";
+}
+
+function setupReason(row: Pick<FundingRow, "annualizedFundingPct" | "basisPct" | "signal">): string {
+  if (Math.abs(row.annualizedFundingPct) < ENTRY_THRESHOLD_ANNUALIZED) {
+    return `Funding below entry threshold: ${row.annualizedFundingPct.toFixed(2)}% < ${ENTRY_THRESHOLD_ANNUALIZED}%`;
+  }
+
+  if (Math.abs(row.basisPct) > MAX_ENTRY_BASIS_ABS_PCT) {
+    return `Basis too stretched: ${row.basisPct.toFixed(4)}% > ${MAX_ENTRY_BASIS_ABS_PCT}%`;
+  }
+
+  if (row.signal === "NONE") {
+    return "No directional funding signal";
+  }
+
+  return "Setup valid";
 }
 
 async function scanSymbol(symbol: string): Promise<FundingRow> {
@@ -64,7 +84,7 @@ async function scanSymbol(symbol: string): Promise<FundingRow> {
   const basisPct = ((futuresLast - spotLast) / spotLast) * 100;
   const signal = buildSignal(annualizedFundingPct);
 
-  return {
+  const baseRow = {
     symbol,
     spotLast,
     futuresLast,
@@ -72,13 +92,12 @@ async function scanSymbol(symbol: string): Promise<FundingRow> {
     annualizedFundingPct,
     basisPct,
     signal,
+  };
+
+  return {
+    ...baseRow,
     state: "WAITING_FOR_SETUP",
-    stateReason:
-      Math.abs(annualizedFundingPct) < ENTRY_THRESHOLD_ANNUALIZED
-        ? `Funding below entry threshold: ${annualizedFundingPct.toFixed(2)}% < ${ENTRY_THRESHOLD_ANNUALIZED}%`
-        : signal === "NONE"
-        ? "No directional funding signal"
-        : "Setup valid",
+    stateReason: setupReason(baseRow),
   };
 }
 
@@ -99,7 +118,6 @@ function exitReason(row: FundingRow, mark: FundingRow["mark"]): string | null {
 
 async function tick(tickNo: number) {
   const isDecisionTick = tickNo % DECISION_EVERY_TICKS === 0;
-  const account = new PaperAccount(10000);
   const symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"];
 
   console.log(`\n=== Tick ${tickNo} | ${new Date().toISOString()} | decision=${isDecisionTick} ===`);
@@ -160,16 +178,17 @@ async function tick(tickNo: number) {
         }
       }
 
-if (
-  isDecisionTick &&
-  Math.abs(row.annualizedFundingPct) >= ENTRY_THRESHOLD_ANNUALIZED &&
-  Math.abs(row.basisPct) <= MAX_ENTRY_BASIS_ABS_PCT &&
-  row.signal !== "NONE" &&
-  account.positions.length < 3 &&
-  account.canOpen(POSITION_SIZE_USD)
-) {
+      const entryValid =
+        isDecisionTick &&
+        Math.abs(row.annualizedFundingPct) >= ENTRY_THRESHOLD_ANNUALIZED &&
+        Math.abs(row.basisPct) <= MAX_ENTRY_BASIS_ABS_PCT &&
+        row.signal !== "NONE" &&
+        account.positions.length < 3 &&
+        account.canOpen(POSITION_SIZE_USD);
+
+      if (entryValid) {
         row.state = "OPENING_POSITION";
-        row.stateReason = "Entry threshold met";
+        row.stateReason = "Entry threshold and basis filter met";
 
         const opened = account.open({
           symbol: row.symbol,
@@ -194,6 +213,7 @@ if (
       }
     } catch (err) {
       console.error(`Failed ${symbol}:`, err);
+
       snapshot.push({
         symbol,
         spotLast: 0,
@@ -231,8 +251,10 @@ if (
 
 async function main() {
   console.log("Krypt Agent Crypto daemon starting...");
-  console.log(`Risk: TP=${TAKE_PROFIT_USD}, SL=${STOP_LOSS_USD}`);
-  console.log(`Entry threshold=${ENTRY_THRESHOLD_ANNUALIZED}% | Exit funding collapse=${EXIT_FUNDING_COLLAPSE_ANNUALIZED}%`);
+  console.log(`Risk: TP=${TAKE_PROFIT_USD}, SL=${STOP_LOSS_USD}, Basis SL=${BASIS_STOP_LOSS_USD}`);
+  console.log(
+    `Entry threshold=${ENTRY_THRESHOLD_ANNUALIZED}% | Exit funding collapse=${EXIT_FUNDING_COLLAPSE_ANNUALIZED}% | Max entry basis=${MAX_ENTRY_BASIS_ABS_PCT}%`
+  );
 
   let tickNo = 0;
 
