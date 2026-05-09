@@ -3,7 +3,7 @@ import { PaperAccount, PositionSide } from "./portfolio/paperAccount";
 import { writeSnapshot, appendTrade, appendMark } from "./data/logger";
 
 const WATCH_INTERVAL_MS = 30_000;
-const DECISION_EVERY_TICKS = 10;
+const DECISION_EVERY_TICKS = 1;
 
 const POSITION_SIZE_USD = 2000;
 
@@ -14,7 +14,7 @@ const TAKE_PROFIT_USD = 20;
 const STOP_LOSS_USD = -(TAKE_PROFIT_USD / 2);
 const BASIS_STOP_LOSS_USD = -(TAKE_PROFIT_USD / 4);
 
-const MAX_ENTRY_BASIS_ABS_PCT = 0.05;
+const MAX_ENTRY_BASIS_ABS_PCT = 0.12;
 const MAX_HOLD_HOURS = 8;
 
 type BotState =
@@ -193,7 +193,7 @@ async function tick(tickNo: number) {
         const opened = account.open({
           symbol: row.symbol,
           side: row.signal as PositionSide,
-          notionalUsd: POSITION_SIZE_USD,
+          notionalUsd: Math.min(account.cashUsd * 0.35, 2500),
           entryFundingRate: row.fundingRate,
           entryBasisPct: row.basisPct,
           openedAt: new Date().toISOString(),
