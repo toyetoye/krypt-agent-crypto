@@ -1,5 +1,24 @@
 {
-  "cashUsd": 10000.05341802345,
-  "positions": [],
-  "updatedAt": "2026-05-07T12:03:58.350Z"
+  "cashUsd": 6000.085392575307,
+  "positions": [
+    {
+      "id": "SOLUSDT-1778265185723",
+      "symbol": "SOLUSDT",
+      "side": "SHORT_PERP_LONG_SPOT",
+      "notionalUsd": 2000,
+      "entryFundingRate": 0.00005213,
+      "entryBasisPct": 0,
+      "openedAt": "2026-05-08T18:33:05.722Z"
+    },
+    {
+      "id": "ETHUSDT-1778275982789",
+      "symbol": "ETHUSDT",
+      "side": "SHORT_PERP_LONG_SPOT",
+      "notionalUsd": 2000,
+      "entryFundingRate": 0.00005022,
+      "entryBasisPct": -0.039826495008704374,
+      "openedAt": "2026-05-08T21:33:02.789Z"
+    }
+  ],
+  "updatedAt": "2026-05-08T21:33:02.790Z"
 }
